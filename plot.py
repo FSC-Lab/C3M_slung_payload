@@ -81,8 +81,8 @@ if __name__ == '__main__':
     errors = []
     xinits = []
     for _ in range(args.nTraj):
-        # xe_0 = XE_INIT_MIN + np.random.rand(len(XE_INIT_MIN)) * (XE_INIT_MAX - XE_INIT_MIN) # Randomly sample XE_init
-        xe_0 = XE_INIT_MIN + np.round(np.random.rand(len(XE_INIT_MIN))) * (XE_INIT_MAX) * 2 # Only plot XE_init_min and XE_init_max
+        xe_0 = XE_INIT_MIN + np.random.rand(len(XE_INIT_MIN)) * (XE_INIT_MAX - XE_INIT_MIN) # Randomly sample XE_init
+        # xe_0 = XE_INIT_MIN + np.round(np.random.rand(len(XE_INIT_MIN))) * (XE_INIT_MAX) * 2 # Only plot XE_init_min and XE_init_max
         xinit = xstar_0 + xe_0.reshape(-1,1)
         xinits.append(xinit)
         x, u = EulerIntegrate(controller, f, B, xstar,ustar,xinit,time_bound,time_step,with_tracking=True,sigma=args.sigma)

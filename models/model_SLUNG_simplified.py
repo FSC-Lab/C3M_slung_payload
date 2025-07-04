@@ -4,7 +4,7 @@ from torch.autograd import grad
 import numpy as np
 
 # States that are used in the model
-effective_dim_start = 6
+effective_dim_start = 5
 effective_dim_end = 12
 
 
@@ -67,9 +67,9 @@ def get_model(num_dim_x, num_dim_control, w_lb, use_cuda=False):
         
         # Assuming the B(x) is structured as follows:
         # B(x) = [0, b(x)], where b(x) is invertible
-        Wbot = model_Wbot(x[:, effective_dim_start:effective_dim_end-num_dim_control]).view(bs, num_dim_x-num_dim_control, num_dim_x-num_dim_control)
-        W[:, 0:num_dim_x-num_dim_control, 0:num_dim_x-num_dim_control] = Wbot
-        W[:, num_dim_x-num_dim_control::, 0:num_dim_x-num_dim_control] = 0
+        # Wbot = model_Wbot(x[:, effective_dim_start:effective_dim_end-num_dim_control]).view(bs, num_dim_x-num_dim_control, num_dim_x-num_dim_control)
+        # W[:, 0:num_dim_x-num_dim_control, 0:num_dim_x-num_dim_control] = Wbot
+        # W[:, num_dim_x-num_dim_control::, 0:num_dim_x-num_dim_control] = 0
 
         W = W.transpose(1,2).matmul(W)
         W = W + w_lb * torch.eye(num_dim_x).view(1, num_dim_x, num_dim_x).type(x.type())

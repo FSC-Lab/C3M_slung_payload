@@ -2,34 +2,31 @@ import numpy as np
 from utils import temp_seed
 
 # for training
-X_MIN = np.array([-0.7, -0.7, -30., -30., -30., 0.5, -2.5, -2.5, -2.5, -2.5, -2.5, 2.5]).reshape(-1,1)
-X_MAX = np.array([0.7, 0.7, 30., 30., 30., 2, 3.5, 2.5, 2.5, 2.5, 2.5, 2.5]).reshape(-1,1)
+X_REF = np.array([0., 0., 0., 0., 0., 2, 0, 0, 0, 0, 0, 0]).reshape(-1,1)
 
-g = 9.81
-m_p = 0.5  # mass of the payload
-m_q = 1.63  # mass of the quadrotor
+X_MIN = np.array([-0.5, -0.5, -30., -30., -30., 1, -2.5, -2.5, -2.5, -2.5, -2.5, -2.5]).reshape(-1,1)
+X_MAX = np.array([0.5, 0.5, 30., 30., 30., 3, 2.5, 2.5, 2.5, 2.5, 2.5, 2.5]).reshape(-1,1)
 
-f_x_bound = 1.
-f_y_bound = 1.
-f_z_bound = 1.
-tau_bound = 1.
+f_x_bound = 0.
+f_y_bound = 0.
+f_z_bound = 0.
+tau_bound = 0.
 
-UREF_MIN = np.array([-f_x_bound, -f_y_bound, -f_z_bound + (m_p + m_q)*g, -tau_bound]).reshape(-1,1)
-UREF_MAX = np.array([f_x_bound, f_y_bound, f_z_bound + (m_p + m_q)*g, tau_bound]).reshape(-1,1)
+UREF_MIN = np.array([-f_x_bound, -f_y_bound, -f_z_bound, -tau_bound]).reshape(-1,1)
+UREF_MAX = np.array([f_x_bound, f_y_bound, f_z_bound, tau_bound]).reshape(-1,1)
 
 lim = 1
-XE_MIN = np.array([-lim/3, -lim/3, -lim, -lim, -lim, -lim, -lim, -lim, -lim, -lim, -lim, -lim]).reshape(-1,1)
-XE_MAX = np.array([lim/3, lim/3, lim, lim, lim, lim, lim, lim, lim, lim, lim, lim]).reshape(-1,1)
+XE_MIN = np.array([-lim/10, -lim/10, -lim, -lim, -lim, -lim, -lim, -lim, -lim, -lim, -lim, -lim]).reshape(-1,1)
+XE_MAX = np.array([lim/10, lim/10, lim, lim, lim, lim, lim, lim, lim, lim, lim, lim]).reshape(-1,1)
 
 # for sampling ref
-X_INIT_MIN = np.array([-0.5, -0.5, -0.5, -0.5, -0.5, 1.5, 1, 0, 0, -0.2, -0.2, 0])
-X_INIT_MAX = np.array([0.5, 0.5, 0.5, 0.5, 0.5, 1.5, 1, 0, 0, 0.2, 0.2, 0])
+X_INIT_MIN = np.array([-0.3, -0.3, -0.5, -0.5, -0.5, 1.5, 0, 0, 0, 0, 0, 0])
+X_INIT_MAX = np.array([0.3, 0.3, 0.5, 0.5, 0.5, 1.5, 0, 0, 0, 0, 0, 0])
 
-# for sampling ref
-XE_INIT_MIN = np.array([-0.1, -0.1, -0.2, -0.2, -0.2, -0.2, -0.2, -0.2, -0.2, -0.2, -0.2, -0.1])
-XE_INIT_MAX = np.array([0.1, 0.1, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.1])
+XE_INIT_MIN = np.array([-0.05, -0.05, -0.2, -0.2, -0.2, -0.2, -0.2, -0.2, -0.2, -0.2, -0.2, 0])
+XE_INIT_MAX = np.array([0.05, 0.05, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0])
 
-time_bound = 6.
+time_bound = 16.
 time_step = 0.03
 t = np.arange(0, time_bound, time_step)
 
@@ -47,7 +44,7 @@ def system_reset(seed):
         weights = (2. * weights / np.sqrt((weights**2).sum(axis=0, keepdims=True))).tolist()
         uref = []
         for _t in t:
-            u = np.array([0., 0., (m_p + m_q)*g, 0.])  # ref
+            u = np.array([0., 0., 0., 0.])  # ref
 
             # Try circular path
             # ...

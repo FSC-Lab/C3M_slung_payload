@@ -43,6 +43,7 @@ os.system('cp -r systems/ '+args.log)
 epsilon = args._lambda * 0.1
 
 config = importlib.import_module('config_'+args.task)
+X_REF = config.X_REF # if have
 X_MIN = config.X_MIN
 X_MAX = config.X_MAX
 U_MIN = config.UREF_MIN
@@ -65,7 +66,8 @@ model_W, model_Wbot, model_u_w1, model_u_w2, W_func, u_func = get_model(num_dim_
 
 # constructing datasets
 def sample_xef():
-    return (X_MAX-X_MIN) * np.random.rand(num_dim_x, 1) + X_MIN
+    # return (X_MAX-X_MIN) * np.random.rand(num_dim_x, 1) + X_MIN
+    return X_REF
 
 def sample_x(xref):
     xe = (XE_MAX-XE_MIN) * np.random.rand(num_dim_x, 1) + XE_MIN
