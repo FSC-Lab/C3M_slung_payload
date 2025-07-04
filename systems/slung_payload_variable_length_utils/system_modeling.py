@@ -135,6 +135,17 @@ class SlungPayloadVariableLengthSystem:
         self.F_g = torch.bmm(G, g_I)
 
     def calc_fxgx(self):
+        # Compute fx
         vel = torch.cat([self.v_tilde, self.v_q, self.l_dot], dim=1)
         self.fx[:, 0:6, 0] = vel.squeeze(-1)
-        self.fx[:, 6:12, 0] = torch.linalg.solve(self.M, self.F_g - torch.bmm(self.C, vel)).squeeze(-1)        
+        self.fx[:, 6:12, 0] = torch.linalg.solve(self.M, self.F_g - torch.bmm(self.C, vel)).squeeze(-1)
+        
+        # Compute gx
+        H = torch.zeros(self.bs, 6, self.num_dim_control).type(self.type)
+        H[:, 2, 0] = 1  # Thrust force in x direction of earth frame
+        H[:, 3, 1] = 1  # Thrust force in y direction of earth frame
+        H[:, 4, 2] = 1  # Thrust force in z direction of earth frame
+        H[:, 5, 3] = 1  # Extending torque
+        
+        gx_lower = torch.linalg.solve(self.M, H)
+        self.gx = torch.cat([torch.zeros(self.bs, 6, self.num_dim_control).type(self.type), gx_lower], dim=1)
