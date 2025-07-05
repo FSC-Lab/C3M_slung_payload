@@ -27,5 +27,5 @@ def get_B_dot(r_p, v_p):
     Z = get_Z(r_p)
     r_p_T = r_p.transpose(1, 2)  # shape (bs, 1, 2)
     v_p_T = v_p.transpose(1, 2)  # shape (bs, 1, 2)
-    B_dot = torch.cat([O2, -(Z ** 2 * v_p_T + torch.bmm(r_p_T, v) * r_p_T)/(Z ** 3)], dim=1)  # shape (bs, 3, 2)
+    B_dot = torch.cat([O2, -(Z ** 2 * v_p_T + torch.bmm(r_p_T, v_p) * r_p_T)/(Z ** 3)], dim=1)  # shape (bs, 3, 2)
     return B_dot
