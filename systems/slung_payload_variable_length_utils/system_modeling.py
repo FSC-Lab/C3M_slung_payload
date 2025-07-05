@@ -17,20 +17,20 @@ class SlungPayloadVariableLengthSystem:
         self.m_q = 1.63  # mass of the quadrotor
         
         # States
-        self.r_tilde = torch.zeros(self.bs, 2, 1).type(x_init.type())  # (bs, 2, 1)
+        self.r_p = torch.zeros(self.bs, 2, 1).type(x_init.type())  # (bs, 2, 1)
         self.r_q = torch.zeros(self.bs, 3, 1).type(x_init.type())
         self.l = torch.zeros(self.bs, 1, 1).type(x_init.type())  # (bs, 1, 1)
-        self.v_tilde = torch.zeros(self.bs, 2, 1).type(x_init.type())  # (bs, 2, 1)
+        self.v_p = torch.zeros(self.bs, 2, 1).type(x_init.type())  # (bs, 2, 1)
         self.v_q = torch.zeros(self.bs, 3, 1).type(x_init.type())  # (bs, 3, 1)
         self.l_dot = torch.zeros(self.bs, 1, 1).type(x_init.type())  # (bs, 1, 1)
         
         # Kinematics
-        self.Z = get_Z(self.r_tilde)
-        self.n = get_n(self.r_tilde)
+        self.Z = get_Z(self.r_p)
+        self.n = get_n(self.r_p)
         self.n_T = self.n.transpose(1, 2)
-        self.B = get_B(self.r_tilde)
+        self.B = get_B(self.r_p)
         self.B_T = self.B.transpose(1, 2)
-        self.B_dot = get_B_dot(self.r_tilde, self.v_tilde)
+        self.B_dot = get_B_dot(self.r_p, self.v_p)
         
         # MCG matrices
         self.M = torch.zeros(self.bs, 6, 6).type(x_init.type())
@@ -53,21 +53,21 @@ class SlungPayloadVariableLengthSystem:
         self.num_dim_control = 4
          
         # States
-        r_tilde_x, r_tilde_y, r_q_x, r_q_y, r_q_z, l, v_tilde_x, v_tilde_y, v_q_x, v_q_y, v_q_z, l_dot = [x[:,i,0] for i in range(self.num_dim_x)]
-        self.r_tilde = torch.stack([r_tilde_x, r_tilde_y], dim=1).unsqueeze(-1)
+        r_p_x, r_p_y, r_q_x, r_q_y, r_q_z, l, v_p_x, v_p_y, v_q_x, v_q_y, v_q_z, l_dot = [x[:,i,0] for i in range(self.num_dim_x)]
+        self.r_p = torch.stack([r_p_x, r_p_y], dim=1).unsqueeze(-1)
         self.r_q = torch.stack([r_q_x, r_q_y, r_q_z], dim=1).unsqueeze(-1)
         self.l = l.view(-1, 1, 1)
-        self.v_tilde = torch.stack([v_tilde_x, v_tilde_y], dim=1).unsqueeze(-1)
+        self.v_p = torch.stack([v_p_x, v_p_y], dim=1).unsqueeze(-1)
         self.v_q = torch.stack([v_q_x, v_q_y, v_q_z], dim=1).unsqueeze(-1)
         self.l_dot = l_dot.view(-1, 1, 1)
         
         # Kinematics 
-        self.Z = get_Z(self.r_tilde)
-        self.n = get_n(self.r_tilde)
+        self.Z = get_Z(self.r_p)
+        self.n = get_n(self.r_p)
         self.n_T = self.n.transpose(1, 2)
-        self.B = get_B(self.r_tilde)
+        self.B = get_B(self.r_p)
         self.B_T = self.B.transpose(1, 2)
-        self.B_dot = get_B_dot(self.r_tilde, self.v_tilde)
+        self.B_dot = get_B_dot(self.r_p, self.v_p)
         
         # Update M, C, F_g
         self.calc_MCG()
@@ -119,10 +119,10 @@ class SlungPayloadVariableLengthSystem:
         # Compute C matrix
         C11 = (self.l ** 2) * torch.bmm(self.B_T, self.B_dot) + self.l_dot * self.l * torch.bmm(self.B_T, self.B)
         C12 = torch.zeros(self.bs, 2, 3).type(self.type)
-        C13 = self.l * torch.bmm(torch.bmm(self.B_T, self.B), self.v_tilde)
+        C13 = self.l * torch.bmm(torch.bmm(self.B_T, self.B), self.v_p)
         C21 = self.l * self.B_dot + self.B * self.l_dot
         C22 = torch.zeros(self.bs, 3, 3).type(self.type)
-        C23 = torch.bmm(self.B, self.v_tilde)
+        C23 = torch.bmm(self.B, self.v_p)
         C31 = self.l * torch.bmm(self.n_T, self.B_dot)
         C32 = torch.zeros(self.bs, 1, 3).type(self.type)
         C33 = torch.zeros(self.bs, 1, 1).type(self.type)
@@ -149,7 +149,7 @@ class SlungPayloadVariableLengthSystem:
 
     def calc_fxgx(self):
         # Compute fx
-        vel = torch.cat([self.v_tilde, self.v_q, self.l_dot], dim=1)
+        vel = torch.cat([self.v_p, self.v_q, self.l_dot], dim=1)
         self.fx[:, 0:6, 0] = vel.squeeze(-1)
         self.fx[:, 6:12, 0] = torch.linalg.solve(self.M, self.F_g - torch.bmm(self.C, vel)).squeeze(-1)
         
