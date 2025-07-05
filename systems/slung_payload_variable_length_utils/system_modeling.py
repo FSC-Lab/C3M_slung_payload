@@ -6,7 +6,8 @@ from .kinematics import get_Z, get_n, get_B, get_B_dot
 class SlungPayloadVariableLengthSystem:
     def __init__(self, x_init):
         # Training parameters
-        self.bs = 1
+        self.type = x_init.type()
+        self.bs = x_init.shape[0]
         self.num_dim_x = 12  # number of dimensions in state vector x
         self.num_dim_control = 4  # number of dimensions in control vector u
         
@@ -15,14 +16,6 @@ class SlungPayloadVariableLengthSystem:
         self.m_p = 0.5  # mass of the payload
         self.m_q = 1.63  # mass of the quadrotor
         
-        # Kinematics
-        self.Z = get_Z(x_init)
-        self.n = get_n(x_init)
-        self.n_T = self.n.transpose(1, 2)
-        self.B = get_B(x_init)
-        self.B_T = self.B.transpose(1, 2)
-        self.B_dot = get_B_dot(x_init)
-        
         # States
         self.r_tilde = torch.zeros(self.bs, 2, 1).type(x_init.type())  # (bs, 2, 1)
         self.r_q = torch.zeros(self.bs, 3, 1).type(x_init.type())
@@ -30,6 +23,14 @@ class SlungPayloadVariableLengthSystem:
         self.v_tilde = torch.zeros(self.bs, 2, 1).type(x_init.type())  # (bs, 2, 1)
         self.v_q = torch.zeros(self.bs, 3, 1).type(x_init.type())  # (bs, 3, 1)
         self.l_dot = torch.zeros(self.bs, 1, 1).type(x_init.type())  # (bs, 1, 1)
+        
+        # Kinematics
+        self.Z = get_Z(self.r_tilde)
+        self.n = get_n(self.r_tilde)
+        self.n_T = self.n.transpose(1, 2)
+        self.B = get_B(self.r_tilde)
+        self.B_T = self.B.transpose(1, 2)
+        self.B_dot = get_B_dot(self.r_tilde, self.v_tilde)
         
         # MCG matrices
         self.M = torch.zeros(self.bs, 6, 6).type(x_init.type())
@@ -40,15 +41,19 @@ class SlungPayloadVariableLengthSystem:
         self.fx = torch.zeros(self.bs, self.num_dim_x, 1).type(self.type)
         self.gx = torch.zeros(self.bs, self.num_dim_x, self.num_dim_control).type(self.type)
         
+        # Bbot matrix
+        self.Bbot = torch.zeros(self.bs, self.num_dim_x, self.num_dim_x-self.num_dim_control).type(self.type)
+        
 
     def update_state(self, x):
         # Training parameters
         self.type = x.type()
         self.bs = x.shape[0]
-        num_dim_x = self.num_dim_x
-        
+        self.num_dim_x = 12
+        self.num_dim_control = 4
+         
         # States
-        r_tilde_x, r_tilde_y, r_q_x, r_q_y, r_q_z, l, v_tilde_x, v_tilde_y, v_q_x, v_q_y, v_q_z, l_dot = [x[:,i,0] for i in range(num_dim_x)]
+        r_tilde_x, r_tilde_y, r_q_x, r_q_y, r_q_z, l, v_tilde_x, v_tilde_y, v_q_x, v_q_y, v_q_z, l_dot = [x[:,i,0] for i in range(self.num_dim_x)]
         self.r_tilde = torch.stack([r_tilde_x, r_tilde_y], dim=1).unsqueeze(-1)
         self.r_q = torch.stack([r_q_x, r_q_y, r_q_z], dim=1).unsqueeze(-1)
         self.l = l.view(-1, 1, 1)
@@ -66,7 +71,12 @@ class SlungPayloadVariableLengthSystem:
         
         # Update M, C, F_g
         self.calc_MCG()
+        
+        # Update fx, gx
         self.calc_fxgx()
+        
+        # Update Bbot
+        self.calc_Bbot()
 
     def get_M(self):
         return self.M
@@ -82,6 +92,9 @@ class SlungPayloadVariableLengthSystem:
 
     def get_g(self):
         return self.gx
+    
+    def get_Bbot(self):
+        return self.Bbot
 
     # def get_DfDx(self):
     #     return .......
@@ -149,3 +162,24 @@ class SlungPayloadVariableLengthSystem:
         
         gx_lower = torch.linalg.solve(self.M, H)
         self.gx = torch.cat([torch.zeros(self.bs, 6, self.num_dim_control).type(self.type), gx_lower], dim=1)
+        
+    def calc_Bbot(self):
+        # Compute Bbot
+        Bbot = []
+        for i in range(self.bs):
+            gi = self.gx[i]  # num_dim_x x num_dim_control
+            # SVD: Bi = U S Vh
+            U, S, Vh = torch.linalg.svd(gi, full_matrices=True)
+            # Null space: columns of U corresponding to zero singular values
+            # For numerical stability, use a tolerance
+            tol = 1e-7
+            null_mask = S < tol
+            if null_mask.sum() == 0:
+                # If no exact zeros, take the last (n-m) columns of U
+                Bbot_i = U[:, self.num_dim_control:]
+            else:
+                Bbot_i = U[:, null_mask]
+            Bbot.append(Bbot_i)
+        # Stack to shape bs x n x (n-m)
+        Bbot = torch.stack(Bbot, dim=0)
+        self.Bbot = Bbot.type(self.type)

@@ -88,16 +88,6 @@ def sample_full():
 X_tr = [sample_full() for _ in range(args.num_train)]
 X_te = [sample_full() for _ in range(args.num_test)]
 
-if 'Bbot_func' not in locals():
-    def Bbot_func(x): # columns of Bbot forms a basis of the null space of B^T
-        bs = x.shape[0]
-        Bbot = torch.cat((torch.eye(num_dim_x-num_dim_control, num_dim_x-num_dim_control),
-            torch.zeros(num_dim_control, num_dim_x-num_dim_control)), dim=0)
-        if args.use_cuda:
-            Bbot = Bbot.cuda()
-        Bbot.unsqueeze(0)
-        return Bbot.repeat(bs, 1, 1)
-
 def Jacobian_Matrix(M, x):
     # NOTE that this function assume that data are independent of each other
     # along the batch dimension.
@@ -163,6 +153,7 @@ def forward(x, xref, uref, _lambda, verbose=False, acc=False, detach=False):
     bs = x.shape[0]
     W = W_func(x)
     M = torch.inverse(W)
+
     f = f_func(x)
     B = B_func(x)
     DfDx = Jacobian(f, x)
@@ -170,7 +161,7 @@ def forward(x, xref, uref, _lambda, verbose=False, acc=False, detach=False):
     for i in range(num_dim_control):
         DBDx[:,:,:,i] = Jacobian(B[:,:,i].unsqueeze(-1), x)
 
-    _Bbot = Bbot_func(x)
+    _Bbot = Bbot_func(B)
     u = u_func(x, x - xref, uref) # u: bs x m x 1 # TODO: x - xref
     K = Jacobian(u, x)
 

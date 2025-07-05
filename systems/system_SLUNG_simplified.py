@@ -4,17 +4,12 @@ import slung_payload_variable_length_utils as spu
 num_dim_x = 12
 num_dim_control = 4
 
-g = 9.81
-m_p = 0.5  # mass of the payload
-m_q = 1.63  # mass of the quadrotor
-
-# Add another function to get dynamics simplify f_func, B_func
-
-slung_load_system = spu.SlungPayloadVariableLengthSystem(dd, sss)
-
+bs = 1024  # Set up as constant for now, changed it to match main.py later
+x_init = torch.tensor([[[0.], [0.], [0.], [0.], [0.], [2.], [0.], [0.], [0.], [0.], [0.], [0.]]]).repeat(bs, 1, 1)
+slung_load_system = spu.SlungPayloadVariableLengthSystem(x_init)
 
 def f_func(x):
-    slung_load_system.update_state()
+    slung_load_system.update_state(x)
     f = slung_load_system.get_f()
     return f
 
@@ -24,8 +19,8 @@ def DfDx_func(x):
 
 
 def B_func(x):
-    
-    
+    slung_load_system.update_state(x)
+    B = slung_load_system.get_g()
     return B
 
 
@@ -33,16 +28,6 @@ def DBDx_func(x):
     raise NotImplemented('NotImplemented')
 
 
-# How to calculate Bbot: null space of B
-def Bbot_func(x):
-    # Bbot: bs x n x (n-m)
-    bs = x.shape[0]
-    Bbot = torch.zeros(bs, num_dim_x, num_dim_x-num_dim_control).type(x.type())
-    Bbot[:, 0, 0] = 1
-    Bbot[:, 1, 1] = 1
-    Bbot[:, 2, 2] = 1
-    Bbot[:, 3, 3] = 1
-    Bbot[:, 4, 4] = 1
-    Bbot[:, 5, 5] = 1
-    
+def Bbot_func():
+    Bbot = slung_load_system.get_Bbot()
     return Bbot
