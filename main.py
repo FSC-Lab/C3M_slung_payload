@@ -161,7 +161,7 @@ def forward(x, xref, uref, _lambda, verbose=False, acc=False, detach=False):
     for i in range(num_dim_control):
         DBDx[:,:,:,i] = Jacobian(B[:,:,i].unsqueeze(-1), x)
 
-    _Bbot = Bbot_func(B)
+    _Bbot = Bbot_func()
     u = u_func(x, x - xref, uref) # u: bs x m x 1 # TODO: x - xref
     K = Jacobian(u, x)
 

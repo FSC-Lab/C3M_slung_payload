@@ -5,7 +5,7 @@ num_dim_x = 12
 num_dim_control = 4
 
 bs = 1024  # Set up as constant for now, changed it to match main.py later
-x_init = torch.tensor([[[0.], [0.], [0.], [0.], [0.], [2.], [0.], [0.], [0.], [0.], [0.], [0.]]]).repeat(bs, 1, 1)
+x_init = torch.tensor([[[0.], [0.], [0.], [0.], [0.], [2.], [0.], [0.], [0.], [0.], [0.], [0.]]]).repeat(bs, 1, 1).cuda()
 slung_load_system = spu.SlungPayloadVariableLengthSystem(x_init)
 
 def f_func(x):
